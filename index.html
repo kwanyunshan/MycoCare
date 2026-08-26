@@ -109,19 +109,18 @@
 <h3>🚿 Automatic Watering</h3>
 
 <p>
-Mode:
-<b>Auto</b>
+    Mode:
+    <b id="wateringMode">Loading...</b>
 </p>
-
 
 <p>
-Last Watering:
-10:00 AM
+    Last Watering:
+    <span id="lastWatering">Loading...</span>
 </p>
 
 
-<button>
-Start Pump
+<button onclick="controlPump()">
+    Start Pump
 </button>
 
 
@@ -138,13 +137,13 @@ Start Pump
 
 
 <p>
-Status:
-<b>OFF</b>
+    Status:
+    <b id="fanStatus">Loading...</b>
 </p>
 
 
-<button>
-Turn ON
+<button onclick="controlFan()">
+    Turn ON
 </button>
 
 
