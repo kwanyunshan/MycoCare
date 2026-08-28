@@ -54,33 +54,6 @@ function controlPump() {
         });
 }
 
-
-// ========================================
-// Control Fan
-// ========================================
-
-function controlFan() {
-
-    fetch("control.php?device=fan&action=toggle")
-
-        .then(response => response.json())
-
-        .then(data => {
-
-            console.log(data);
-
-            alert(data.message);
-
-        })
-
-        .catch(error => {
-
-            console.error("Fan Control Error:", error);
-
-        });
-}
-
-
 // ========================================
 // Immediately Get Data
 // ========================================
