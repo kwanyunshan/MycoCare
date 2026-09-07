@@ -7,8 +7,8 @@
 // WiFi Settings
 // ========================================
 
-const char* ssid = "YOUR_WIFI_NAME";
-const char* password = "YOUR_WIFI_PASSWORD";
+const char* ssid = "kwan";
+const char* password = "ys030305";
 
 
 // ========================================
@@ -17,7 +17,7 @@ const char* password = "YOUR_WIFI_PASSWORD";
 // ========================================
 
 const char* serverName =
-"http://192.168.0.226/mycocare/save_data.php";
+"http://10.18.65.36/mycocare/save_data.php";
 
 
 // ========================================
@@ -30,11 +30,10 @@ const char* serverName =
 DHT dht(DHTPIN, DHTTYPE);
 
 
-// ========================================
+// ===============,,,,,,,,,,,,,,,,,vggffgfffg=========================
 // MQ135 Settings
 // ========================================
-
-#define MQ135_PIN 32;
+#define MQ135_PIN 32
 
 
 // ========================================
