@@ -1,3 +1,7 @@
+// ========================================
+// Get Sensor Data
+// ========================================
+
 function getSensorData() {
 
     fetch("get_data.php")
@@ -9,8 +13,10 @@ function getSensorData() {
             document.getElementById("temperature").innerText =
                 parseFloat(data.temperature).toFixed(1) + " °C";
 
+
             document.getElementById("humidity").innerText =
                 parseFloat(data.humidity).toFixed(1) + " %";
+
 
             document.getElementById("airQuality").innerText =
                 data.air_quality;
@@ -18,14 +24,45 @@ function getSensorData() {
         })
 
         .catch(error => {
-            console.error("Error:", error);
+            console.error("Sensor Data Error:", error);
         });
 }
 
 
-// Immediately get data
+// ========================================
+// Control Pump
+// ========================================
+
+function controlPump() {
+
+    fetch("control.php?device=pump&action=start")
+
+        .then(response => response.json())
+
+        .then(data => {
+
+            console.log(data);
+
+            alert(data.message);
+
+        })
+
+        .catch(error => {
+
+            console.error("Pump Control Error:", error);
+
+        });
+}
+
+// ========================================
+// Immediately Get Data
+// ========================================
+
 getSensorData();
 
 
-// Update Dashboard every 2 seconds
+// ========================================
+// Update Every 2 Seconds
+// ========================================
+
 setInterval(getSensorData, 2000);

@@ -1,16 +1,28 @@
 #include <WiFi.h>
+#include <HTTPClient.h>
 #include <DHT.h>
 
 
-// ================= WiFi =================
+// ========================================
+// WiFi Settings
+// ========================================
 
 const char* ssid = "kwan";
 const char* password = "ys030305";
 
-WiFiServer server(80);
+
+// ========================================
+// PHP Server
+// Computer IPv4: 192.168.0.226
+// ========================================
+
+const char* serverName =
+"http://10.18.65.36/mycocare/save_data.php";
 
 
-// ================= DHT22 =================
+// ========================================
+// DHT22 Settings
+// ========================================
 
 #define DHTPIN 4
 #define DHTTYPE DHT22
@@ -18,271 +30,211 @@ WiFiServer server(80);
 DHT dht(DHTPIN, DHTTYPE);
 
 
-// ================= MQ135 =================
+// ===============,,,,,,,,,,,,,,,,,vggffgfffg=========================
+// MQ135 Settings
+// ========================================
+<<<<<<< HEAD
+=======
+
 
 #define MQ135_PIN 32
 
 
+// ========================================
+// Sensor Variables
+// ========================================
 
-// Store sensor data
-
-float temperature;
-float humidity;
-
-int airValue;
+float temperature = 0;
+float humidity = 0;
+int airValue = 0;
 
 
+// ========================================
+// Sending Interval
+// ========================================
+
+unsigned long previousMillis = 0;
+const long interval = 5000;
+
+
+// ========================================
+// Setup
+// ========================================
 
 void setup() {
 
   Serial.begin(115200);
+
+  delay(1000);
 
 
   // Start DHT22
 
   dht.begin();
 
+  Serial.println("DHT22 Started");
 
 
   // Connect WiFi
 
   WiFi.begin(ssid, password);
 
+  Serial.print("Connecting to WiFi");
 
-  Serial.print("Connecting WiFi");
 
-
-  while(WiFi.status() != WL_CONNECTED){
+  while (WiFi.status() != WL_CONNECTED) {
 
     delay(500);
 
     Serial.print(".");
-
   }
 
 
   Serial.println();
-
   Serial.println("WiFi Connected!");
 
-
-
   Serial.print("ESP32 IP Address: ");
-
   Serial.println(WiFi.localIP());
-
-
-
-  // Start Web Server
-
-  server.begin();
-
-
-  Serial.println("Web Server Started");
-
 }
 
 
+// ========================================
+// Main Loop
+// ========================================
 
 void loop() {
 
 
+  // ----------------------------------------
   // Read DHT22
+  // ----------------------------------------
 
   humidity = dht.readHumidity();
 
   temperature = dht.readTemperature();
 
 
-
+  // ----------------------------------------
   // Read MQ135
+  // ----------------------------------------
 
   airValue = analogRead(MQ135_PIN);
 
 
+  // ----------------------------------------
+  // Check DHT22 Error
+  // ----------------------------------------
 
-  // Check DHT error
-
-  if(isnan(humidity) || isnan(temperature)){
-
+  if (isnan(humidity) || isnan(temperature)) {
 
     Serial.println("DHT22 Reading Failed!");
 
-    return;
+    delay(2000);
 
+    return;
   }
 
 
+  // ----------------------------------------
+  // Display Sensor Data
+  // ----------------------------------------
 
-  // Serial Monitor
-
-  Serial.println("-------------------");
-
+  Serial.println("------------------------");
 
   Serial.print("Temperature: ");
-
   Serial.print(temperature);
-
   Serial.println(" °C");
 
 
-
   Serial.print("Humidity: ");
-
   Serial.print(humidity);
-
   Serial.println(" %");
 
 
-
   Serial.print("Air Quality: ");
-
   Serial.println(airValue);
 
+  Serial.println("------------------------");
 
 
-  Serial.println("-------------------");
+  // ----------------------------------------
+  // Send Data to PHP
+  // ----------------------------------------
 
+  if (WiFi.status() == WL_CONNECTED) {
 
+    unsigned long currentMillis = millis();
 
 
+    // Send data every 5 seconds
 
-  // Web Client
+    if (currentMillis - previousMillis >= interval) {
 
-  WiFiClient client = server.available();
+      previousMillis = currentMillis;
 
 
+      HTTPClient http;
 
-  if(client){
 
+      // Create URL with sensor data
 
-    Serial.println("New Client");
+      String serverPath = String(serverName) +
+                          "?temperature=" + String(temperature, 2) +
+                          "&humidity=" + String(humidity, 2) +
+                          "&air_quality=" + String(airValue);
 
 
+      Serial.println("Sending data to PHP...");
 
-    String request = client.readStringUntil('\r');
+      Serial.println(serverPath);
 
-    client.flush();
 
+      // Start HTTP Request
 
+      http.begin(serverPath.c_str());
 
-    // HTML Web Page
 
+      // Send GET Request
 
-    client.println("HTTP/1.1 200 OK");
+      int httpResponseCode = http.GET();
 
-    client.println("Content-type:text/html");
 
-    client.println();
+      // Display Response
 
+      Serial.print("HTTP Response Code: ");
 
+      Serial.println(httpResponseCode);
 
-    client.println("<!DOCTYPE html>");
 
-    client.println("<html>");
+      if (httpResponseCode > 0) {
 
-    client.println("<head>");
+        String response = http.getString();
 
+        Serial.print("Server Response: ");
 
+        Serial.println(response);
 
-    client.println("<title>MycoCare Dashboard</title>");
+      }
 
+      else {
 
+        Serial.println("Error sending data!");
 
-    client.println("<meta name='viewport' content='width=device-width, initial-scale=1'>");
-    client.println("<meta http-equiv='refresh'content='2'>");
+      }
 
 
+      // Close HTTP Connection
 
-    client.println("<style>");
-
-    client.println("body{font-family:Arial;text-align:center;background:#f2f2f2;}");
-
-    client.println(".box{background:white;margin:20px;padding:20px;border-radius:10px;}");
-
-    client.println("h1{color:green;}");
-
-    client.println("</style>");
-
-
-
-    client.println("</head>");
-
-
-
-    client.println("<body>");
-
-
-
-    client.println("<h1>MycoCare Smart Mushroom Monitoring</h1>");
-
-
-
-    client.println("<div class='box'>");
-
-
-    client.print("<h2>Temperature: ");
-
-    client.print(temperature);
-
-    client.println(" °C</h2>");
-
-
-
-    client.print("<h2>Humidity: ");
-
-    client.print(humidity);
-
-    client.println(" %</h2>");
-
-
-
-    client.print("<h2>Air Quality: ");
-
-    client.print(airValue);
-
-    client.println("</h2>");
-
-
-
-    // Air Quality Status
-
-
-    if(airValue > 2000){
-
-      client.println("<h2 style='color:red'>Air Quality: Poor</h2>");
-
+      http.end();
     }
-
-    else{
-
-      client.println("<h2 style='color:green'>Air Quality: Good</h2>");
-
-    }
-
-
-
-    client.println("</div>");
-
-
-
-    client.println("</body>");
-
-    client.println("</html>");
-
-
-
-    client.stop();
-
-
-
-    Serial.println("Client Disconnected");
-
-
   }
 
 
+  else {
 
-  delay(1000);
+    Serial.println("WiFi Disconnected!");
+  }
 
+
+  delay(2000);
 }
