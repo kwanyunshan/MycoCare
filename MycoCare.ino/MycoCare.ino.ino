@@ -13,11 +13,11 @@ const char* password = "ys030305";
 
 // ========================================
 // PHP Server
-// Computer IPv4: 10.18.65.36
+// Computer IPv4: 10.104.246.36
 // ========================================
 
 const char* serverName =
-"http://10.18.65.36/mycocare/save_data.php";
+"http://10.104.246.36/mycocare/save_data.php";
 
 
 // ========================================
