@@ -13,7 +13,7 @@ const char* password = "ys030305";
 
 // ========================================
 // PHP Server
-// Computer IPv4: 192.168.0.226
+// Computer IPv4: 10.18.65.36
 // ========================================
 
 const char* serverName =
