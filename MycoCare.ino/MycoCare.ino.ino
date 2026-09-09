@@ -17,11 +17,11 @@ const char* password = "ys030305";
 
 // Send sensor data
 const char* serverName =
-"http://10.104.246.36/mycocare/save_data.php";
+"http://10.31.114.36/mycocare/save_data.php";
 
 // Get pump control status
 const char* controlServer =
-"http://10.104.246.36/mycocare/get_control.php";
+"http://10.31.114.36/mycocare/get_control.php";
 
 
 // ========================================
