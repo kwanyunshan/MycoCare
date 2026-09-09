@@ -1,4 +1,11 @@
 // ========================================
+// Variables
+// ========================================
+
+let currentPumpState = "OFF";
+
+
+// ========================================
 // Get Current Sensor Data
 // ========================================
 
@@ -19,6 +26,31 @@ function getControlData() {
             document.getElementById("currentHumidity").innerText =
                 humidity.toFixed(1) + " %";
 
+
+            // ========================================
+            // AUTOMATIC CONTROL
+            // ========================================
+
+            if (humidity < 75) {
+
+                // Pump should be ON
+                if (currentPumpState !== "ON") {
+
+                    automaticPump("start");
+
+                }
+
+            } 
+            else if (humidity > 80) {
+
+                // Pump should be OFF
+                if (currentPumpState !== "OFF") {
+
+                    automaticPump("stop");
+
+                }
+            }
+
         })
 
         .catch(error => {
@@ -30,7 +62,47 @@ function getControlData() {
 
 
 // ========================================
-// Start Pump
+// Automatic Pump Control
+// ========================================
+
+function automaticPump(action) {
+
+    fetch("control.php?device=pump&action=" + action)
+
+        .then(response => response.json())
+
+        .then(data => {
+
+            console.log("Automatic:", data.message);
+
+            if (action === "start") {
+
+                currentPumpState = "ON";
+
+                document.getElementById("pumpStatus").innerText = "ON";
+                document.getElementById("manualPumpStatus").innerText = "ON";
+
+            } 
+            else {
+
+                currentPumpState = "OFF";
+
+                document.getElementById("pumpStatus").innerText = "OFF";
+                document.getElementById("manualPumpStatus").innerText = "OFF";
+            }
+
+        })
+
+        .catch(error => {
+
+            console.error("Automatic Pump Error:", error);
+
+        });
+}
+
+
+// ========================================
+// Start Pump - Manual
 // ========================================
 
 function startPump() {
@@ -43,7 +115,10 @@ function startPump() {
 
             alert(data.message);
 
+            currentPumpState = "ON";
+
             document.getElementById("pumpStatus").innerText = "ON";
+            document.getElementById("manualPumpStatus").innerText = "ON";
 
         })
 
@@ -57,7 +132,7 @@ function startPump() {
 
 
 // ========================================
-// Stop Pump
+// Stop Pump - Manual
 // ========================================
 
 function stopPump() {
@@ -70,7 +145,10 @@ function stopPump() {
 
             alert(data.message);
 
+            currentPumpState = "OFF";
+
             document.getElementById("pumpStatus").innerText = "OFF";
+            document.getElementById("manualPumpStatus").innerText = "OFF";
 
         })
 
@@ -84,7 +162,7 @@ function stopPump() {
 
 
 // ========================================
-// Update Humidity
+// Start
 // ========================================
 
 getControlData();
