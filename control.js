@@ -1,7 +1,8 @@
 // ========================================
-// Variables
+// MycoCare Control System
 // ========================================
 
+// Current pump state
 let currentPumpState = "OFF";
 
 
@@ -17,38 +18,86 @@ function getControlData() {
 
         .then(data => {
 
+            // Check for error
             if (data.error) {
+                console.error("Sensor Data Error:", data.error);
                 return;
             }
 
+
+            // ========================================
+            // TEMPERATURE
+            // ========================================
+
+            let temperature = parseFloat(data.temperature);
+
+            if (!isNaN(temperature)) {
+
+                document.getElementById("currentTemperature").innerText =
+                    temperature.toFixed(1) + " °C";
+
+            }
+
+
+            // ========================================
+            // HUMIDITY
+            // ========================================
+
             let humidity = parseFloat(data.humidity);
 
-            document.getElementById("currentHumidity").innerText =
-                humidity.toFixed(1) + " %";
+            if (!isNaN(humidity)) {
+
+                document.getElementById("currentHumidity").innerText =
+                    humidity.toFixed(1) + " %";
+
+            }
 
 
             // ========================================
             // AUTOMATIC CONTROL
             // ========================================
 
-            if (humidity < 75) {
+            if (!isNaN(humidity)) {
 
-                // Pump should be ON
-                if (currentPumpState !== "ON") {
+                // Humidity below 75%
+                // Pump ON
 
-                    automaticPump("start");
+                if (humidity < 75) {
+
+                    if (currentPumpState !== "ON") {
+
+                        automaticPump("start");
+
+                    }
+
+                }
+
+
+                // Humidity above 80%
+                // Pump OFF
+
+                else if (humidity > 80) {
+
+                    if (currentPumpState !== "OFF") {
+
+                        automaticPump("stop");
+
+                    }
 
                 }
 
-            } 
-            else if (humidity > 80) {
 
-                // Pump should be OFF
-                if (currentPumpState !== "OFF") {
+                // Humidity between 75% and 80%
+                // Keep current pump state
 
-                    automaticPump("stop");
+                else {
+
+                    console.log(
+                        "Humidity is within normal range. Keep current pump state."
+                    );
 
                 }
+
             }
 
         })
@@ -58,6 +107,7 @@ function getControlData() {
             console.error("Control Data Error:", error);
 
         });
+
 }
 
 
@@ -73,22 +123,40 @@ function automaticPump(action) {
 
         .then(data => {
 
-            console.log("Automatic:", data.message);
+            console.log("Automatic Control:", data);
+
+
+            // ========================================
+            // Pump ON
+            // ========================================
 
             if (action === "start") {
 
                 currentPumpState = "ON";
 
-                document.getElementById("pumpStatus").innerText = "ON";
-                document.getElementById("manualPumpStatus").innerText = "ON";
+                document.getElementById("pumpStatus").innerText =
+                    "ON";
 
-            } 
-            else {
+                document.getElementById("manualPumpStatus").innerText =
+                    "ON";
+
+            }
+
+
+            // ========================================
+            // Pump OFF
+            // ========================================
+
+            else if (action === "stop") {
 
                 currentPumpState = "OFF";
 
-                document.getElementById("pumpStatus").innerText = "OFF";
-                document.getElementById("manualPumpStatus").innerText = "OFF";
+                document.getElementById("pumpStatus").innerText =
+                    "OFF";
+
+                document.getElementById("manualPumpStatus").innerText =
+                    "OFF";
+
             }
 
         })
@@ -98,11 +166,12 @@ function automaticPump(action) {
             console.error("Automatic Pump Error:", error);
 
         });
+
 }
 
 
 // ========================================
-// Start Pump - Manual
+// Manual Start Pump
 // ========================================
 
 function startPump() {
@@ -113,18 +182,32 @@ function startPump() {
 
         .then(data => {
 
+            console.log("Manual Start:", data);
+
             alert(data.message);
+
+
+            // Update pump state
 
             currentPumpState = "ON";
 
-            document.getElementById("pumpStatus").innerText = "ON";
-            document.getElementById("manualPumpStatus").innerText = "ON";
+
+            // Update Automatic Control status
+
+            document.getElementById("pumpStatus").innerText =
+                "ON";
+
+
+            // Update Manual Control status
+
+            document.getElementById("manualPumpStatus").innerText =
+                "ON";
 
         })
 
         .catch(error => {
 
-            console.error("Pump Error:", error);
+            console.error("Manual Start Pump Error:", error);
 
         });
 
@@ -132,7 +215,7 @@ function startPump() {
 
 
 // ========================================
-// Stop Pump - Manual
+// Manual Stop Pump
 // ========================================
 
 function stopPump() {
@@ -143,18 +226,32 @@ function stopPump() {
 
         .then(data => {
 
+            console.log("Manual Stop:", data);
+
             alert(data.message);
+
+
+            // Update pump state
 
             currentPumpState = "OFF";
 
-            document.getElementById("pumpStatus").innerText = "OFF";
-            document.getElementById("manualPumpStatus").innerText = "OFF";
+
+            // Update Automatic Control status
+
+            document.getElementById("pumpStatus").innerText =
+                "OFF";
+
+
+            // Update Manual Control status
+
+            document.getElementById("manualPumpStatus").innerText =
+                "OFF";
 
         })
 
         .catch(error => {
 
-            console.error("Pump Error:", error);
+            console.error("Manual Stop Pump Error:", error);
 
         });
 
@@ -162,9 +259,14 @@ function stopPump() {
 
 
 // ========================================
-// Start
+// Start System
 // ========================================
 
 getControlData();
+
+
+// ========================================
+// Update Sensor Data Every 2 Seconds
+// ========================================
 
 setInterval(getControlData, 2000);

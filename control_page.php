@@ -84,6 +84,11 @@
             </div>
 
             <div class="status-row">
+                <span>Temperature</span>
+                <b id="currentTemperature">-- °C</b>
+            </div>
+
+            <div class="status-row">
                 <span>Humidity</span>
                 <b id="currentHumidity">-- %</b>
             </div>
