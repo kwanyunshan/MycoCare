@@ -10,14 +10,20 @@ if ($result->num_rows > 0) {
 
     $row = $result->fetch_assoc();
 
-    echo json_encode($row);
+    echo json_encode([
+        "temperature" => $row["temperature"],
+        "humidity" => $row["humidity"],
+        "air_quality" => $row["air_quality"],
+        "water_level" => $row["water_level"]
+    ]);
 
 } else {
 
     echo json_encode([
         "temperature" => 0,
         "humidity" => 0,
-        "air_quality" => 0
+        "air_quality" => 0,
+        "water_level" => 0
     ]);
 }
 

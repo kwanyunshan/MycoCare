@@ -5,7 +5,8 @@ include "db_connect.php";
 if (
     isset($_GET["temperature"]) &&
     isset($_GET["humidity"]) &&
-    isset($_GET["air_quality"])
+    isset($_GET["air_quality"]) &&
+    isset($_GET["water_level"])
 ) {
 
     $temperature = filter_input(
@@ -26,30 +27,43 @@ if (
         FILTER_VALIDATE_INT
     );
 
+    $water_level = filter_input(
+        INPUT_GET,
+        "water_level",
+        FILTER_VALIDATE_INT
+    );
+
+
     if (
         $temperature === false ||
         $humidity === false ||
-        $air_quality === false
+        $air_quality === false ||
+        $water_level === false
     ) {
 
         echo "Invalid sensor data";
         exit();
     }
 
+
     $sql = "INSERT INTO sensor_data
-            (temperature, humidity, air_quality)
-            VALUES (?, ?, ?)";
+            (temperature, humidity, air_quality, water_level)
+            VALUES (?, ?, ?, ?)";
+
 
     $stmt = $conn->prepare($sql);
+
 
     if ($stmt) {
 
         $stmt->bind_param(
-            "ddi",
+            "ddii",
             $temperature,
             $humidity,
-            $air_quality
+            $air_quality,
+            $water_level
         );
+
 
         if ($stmt->execute()) {
 
@@ -60,6 +74,7 @@ if (
             echo "Error saving data";
         }
 
+
         $stmt->close();
 
     } else {
@@ -67,10 +82,12 @@ if (
         echo "Database prepare error";
     }
 
+
 } else {
 
     echo "No sensor data received";
 }
+
 
 $conn->close();
 

@@ -414,3 +414,44 @@ border-radius:15px;
 .profile-card button {
     margin-top: 25px;
 }
+
+/* ========================================
+   Water Level Notification
+======================================== */
+.water-alert {
+    display: none;
+    position: fixed;
+    top: 25px;
+    right: 25px;
+    width: 350px;
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px #aaa;
+    align-items: center;
+    gap: 15px;
+    z-index: 9999;
+    border-left: 6px solid red;
+}
+
+.alert-icon {
+    font-size: 35px;
+}
+
+.water-alert h3 {
+    color: red;
+    margin-bottom: 5px;
+}
+
+.water-alert p {
+    color: #555;
+}
+
+.water-alert button {
+    margin-left: auto;
+    margin-top: 0;
+    background: none;
+    color: #555;
+    font-size: 25px;
+    padding: 5px;
+}

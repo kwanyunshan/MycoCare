@@ -1,6 +1,8 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <DHT.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
 
 
 // ========================================
@@ -8,7 +10,7 @@
 // ========================================
 
 const char* ssid = "kwan";
-const char* password = "ys030305";
+const char* password = "05030302";
 
 
 // ========================================
@@ -39,14 +41,24 @@ DHT dht(DHTPIN, DHTTYPE);
 // ========================================
 
 #define MQ135_PIN 32
+#define WATER_LEVEL_PIN 34
 
 
 // ========================================
 // Relay Settings
 // ========================================
 
-// Relay IN1 → ESP32 GPIO 26
 #define RELAY_PIN 26
+
+
+// ========================================
+// LCD Settings
+// ========================================
+
+// LCD I2C address: usually 0x27
+// 16 columns, 2 rows
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 
 // ========================================
@@ -56,20 +68,15 @@ DHT dht(DHTPIN, DHTTYPE);
 float temperature = 0;
 float humidity = 0;
 int airValue = 0;
-
+int waterLevel = 0;
 
 // ========================================
 // Timing
 // ========================================
 
-// Sensor data upload interval
-unsigned long previousSensorMillis = 0;
-const long sensorInterval = 5000;
-
-
-// Pump control checking interval
-unsigned long previousControlMillis = 0;
-const long controlInterval = 2000;
+// Update every 8 seconds
+unsigned long previousMillis = 0;
+const long updateInterval = 8000;
 
 
 // ========================================
@@ -103,14 +110,36 @@ void setup() {
 
   pinMode(RELAY_PIN, OUTPUT);
 
-  // Active LOW relay:
+  // Active LOW relay
   // HIGH = OFF
   // LOW  = ON
 
-  digitalWrite(RELAY_PIN, HIGH);
+  digitalWrite(RELAY_PIN, LOW);
 
   Serial.println("Relay Started");
   Serial.println("Pump Default Status: OFF");
+
+
+  // ----------------------------------------
+  // Start LCD
+  // ----------------------------------------
+
+  Wire.begin(21, 22);
+
+  lcd.init();
+  lcd.backlight();
+
+  lcd.clear();
+
+  lcd.setCursor(0, 0);
+  lcd.print("MycoCare");
+
+  lcd.setCursor(0, 1);
+  lcd.print("Starting...");
+
+  delay(2000);
+
+  lcd.clear();
 
 
   // ----------------------------------------
@@ -141,6 +170,47 @@ void setup() {
 
 
 // ========================================
+// Display LCD
+// ========================================
+
+void displayLCD() {
+
+  lcd.clear();
+
+
+  // First line
+  lcd.setCursor(0, 0);
+
+  lcd.print("T:");
+
+  lcd.print(temperature, 1);
+
+  lcd.print((char)223);
+
+  lcd.print("C");
+
+
+  // Second part of first line
+  lcd.setCursor(9, 0);
+
+  lcd.print("H:");
+
+  lcd.print(humidity, 1);
+
+  lcd.print("%");
+
+
+  // Second line
+  lcd.setCursor(0, 1);
+
+  lcd.print("Air:");
+
+  lcd.print(airValue);
+
+}
+
+
+// ========================================
 // Check Pump Control
 // ========================================
 
@@ -159,12 +229,8 @@ void checkPumpControl() {
   Serial.println("Checking Pump Control...");
 
 
-  // Connect to get_control.php
-
   http.begin(controlServer);
 
-
-  // Send GET request
 
   int httpResponseCode = http.GET();
 
@@ -172,10 +238,6 @@ void checkPumpControl() {
   Serial.print("Control HTTP Code: ");
   Serial.println(httpResponseCode);
 
-
-  // ----------------------------------------
-  // Server Response
-  // ----------------------------------------
 
   if (httpResponseCode > 0) {
 
@@ -191,10 +253,10 @@ void checkPumpControl() {
 
     if (response.indexOf("\"pump_status\":\"ON\"") >= 0) {
 
-      digitalWrite(RELAY_PIN, LOW);
+      digitalWrite(RELAY_PIN, HIGH);
 
-      Serial.println("💧 Pump Status: ON");
-      Serial.println("Relay GPIO 26: LOW");
+      Serial.println("Pump Status: ON");
+      Serial.println("Relay GPIO 26: HIGH");
 
     }
 
@@ -205,17 +267,17 @@ void checkPumpControl() {
 
     else if (response.indexOf("\"pump_status\":\"OFF\"") >= 0) {
 
-      digitalWrite(RELAY_PIN, HIGH);
+      digitalWrite(RELAY_PIN, LOW);
 
       Serial.println("Pump Status: OFF");
-      Serial.println("Relay GPIO 26: HIGH");
+      Serial.println("Relay GPIO 26: LOW");
 
     }
 
 
     else {
 
-      Serial.println("Pump status not found in response");
+      Serial.println("Pump status not found");
 
     }
 
@@ -251,14 +313,11 @@ void sendSensorData() {
   HTTPClient http;
 
 
-  // ----------------------------------------
-  // Create URL
-  // ----------------------------------------
-
   String serverPath = String(serverName) +
                       "?temperature=" + String(temperature, 2) +
                       "&humidity=" + String(humidity, 2) +
-                      "&air_quality=" + String(airValue);
+                      "&air_quality=" + String(airValue)+
+                      "&water_level=" + String(waterLevel);
 
 
   Serial.println();
@@ -267,16 +326,8 @@ void sendSensorData() {
   Serial.println(serverPath);
 
 
-  // ----------------------------------------
-  // Start HTTP Request
-  // ----------------------------------------
-
   http.begin(serverPath.c_str());
 
-
-  // ----------------------------------------
-  // Send GET Request
-  // ----------------------------------------
 
   int httpResponseCode = http.GET();
 
@@ -284,10 +335,6 @@ void sendSensorData() {
   Serial.print("Sensor HTTP Response Code: ");
   Serial.println(httpResponseCode);
 
-
-  // ----------------------------------------
-  // Server Response
-  // ----------------------------------------
 
   if (httpResponseCode > 0) {
 
@@ -305,10 +352,6 @@ void sendSensorData() {
   }
 
 
-  // ----------------------------------------
-  // Close Connection
-  // ----------------------------------------
-
   http.end();
 
 }
@@ -320,93 +363,98 @@ void sendSensorData() {
 
 void loop() {
 
-
-  // ======================================
-  // Read DHT22
-  // ======================================
-
-  humidity = dht.readHumidity();
-
-  temperature = dht.readTemperature();
-
-
-  // ======================================
-  // Read MQ135
-  // ======================================
-
-  airValue = analogRead(MQ135_PIN);
-
-
-  // ======================================
-  // Check DHT22 Error
-  // ======================================
-
-  if (isnan(humidity) || isnan(temperature)) {
-
-    Serial.println("DHT22 Reading Failed!");
-
-    delay(2000);
-
-    return;
-  }
-
-
-  // ======================================
-  // Display Sensor Data
-  // ======================================
-
-  Serial.println();
-  Serial.println("------------------------");
-
-  Serial.print("Temperature: ");
-  Serial.print(temperature);
-  Serial.println(" °C");
-
-  Serial.print("Humidity: ");
-  Serial.print(humidity);
-  Serial.println(" %");
-
-  Serial.print("Air Quality: ");
-  Serial.println(airValue);
-
-  Serial.println("------------------------");
-
-
-  // ======================================
-  // Current Time
-  // ======================================
-
   unsigned long currentMillis = millis();
 
 
   // ======================================
-  // Send Sensor Data Every 5 Seconds
+  // Update every 8 seconds
   // ======================================
 
-  if (currentMillis - previousSensorMillis >= sensorInterval) {
+  if (currentMillis - previousMillis >= updateInterval) {
 
-    previousSensorMillis = currentMillis;
+    previousMillis = currentMillis;
+
+
+    // ====================================
+    // Read DHT22
+    // ====================================
+
+    humidity = dht.readHumidity();
+
+    temperature = dht.readTemperature();
+
+
+    // ====================================
+    // Read MQ135
+    // ====================================
+
+    airValue = analogRead(MQ135_PIN);
+
+    // Read Water Level
+    waterLevel = analogRead(WATER_LEVEL_PIN);
+
+
+    // ====================================
+    // Check DHT22
+    // ====================================
+
+    if (isnan(humidity) || isnan(temperature)) {
+
+      Serial.println("DHT22 Reading Failed!");
+
+      lcd.clear();
+
+      lcd.setCursor(0, 0);
+      lcd.print("DHT22 Error");
+
+      return;
+    }
+
+
+    // ====================================
+    // Serial Monitor
+    // ====================================
+
+    Serial.println();
+    Serial.println("------------------------");
+
+    Serial.print("Temperature: ");
+    Serial.print(temperature);
+    Serial.println(" C");
+
+    Serial.print("Humidity: ");
+    Serial.print(humidity);
+    Serial.println(" %");
+
+    Serial.print("Air Quality: ");
+    Serial.println(airValue);
+
+    Serial.print("Water Level: ");
+    Serial.println(waterLevel);
+
+    Serial.println("------------------------");
+
+
+    // ====================================
+    // LCD
+    // ====================================
+
+    displayLCD();
+
+
+    // ====================================
+    // Send data to PHP
+    // ====================================
 
     sendSensorData();
 
-  }
 
-
-  // ======================================
-  // Check Pump Control Every 2 Seconds
-  // ======================================
-
-  if (currentMillis - previousControlMillis >= controlInterval) {
-
-    previousControlMillis = currentMillis;
+    // ====================================
+    // Check Pump
+    // ====================================
 
     checkPumpControl();
 
   }
-
-
-  // Small delay
-
-  delay(1000);
 
 }

@@ -6,7 +6,7 @@
 <title>MycoCare Dashboard</title>
 
 <link rel="stylesheet" href="style.css">
-<script src="script.js"></script>
+<script src="script.js" defer></script>
 
 </head>
 
@@ -94,6 +94,25 @@
         <h1 id="airQuality">--</h1>
         <span>Good Ventilation</span>
     </div>
+
+    <div class="card">
+        <h3>💦 Water Level</h3>
+        <h1 id="waterLevel">--</h1>
+        <span id="waterStatus">Checking...</span>
+    </div>
+
+</div>
+
+<div id="waterAlert" class="water-alert">
+
+    <div class="alert-icon">⚠️</div>
+
+    <div>
+        <h3>Low Water Level</h3>
+        <p>Please refill the water tank.</p>
+    </div>
+
+    <button onclick="closeWaterAlert()">×</button>
 
 </div>
 
